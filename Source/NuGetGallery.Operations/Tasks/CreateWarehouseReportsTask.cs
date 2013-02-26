@@ -13,13 +13,14 @@ using NuGetGallery.Operations.Common;
 namespace NuGetGallery.Operations
 {
     [Command("createwarehousereports", "Create warehouse reports", AltName = "cwrep")]
-    public class CreateWarehouseReportsTask : OpsTask
+    public class CreateWarehouseReportsTask : DatabaseTask
     {
         private const string JsonContentType = "application/json";
         private const string PackageReportBaseName = "recentpopularity_";
         private const string PerMonth = "permonth";
         private const string RecentPopularity = "recentpopularity";
         private const string RecentPopularityDetail = "recentpopularitydetail";
+        private const string RecentPackageUpdates = "recentpackageupdates";
 
         [Option("Connection string to the warehouse database", AltName = "wdb")]
         public string WarehouseConnectionString { get; set; }
@@ -41,9 +42,13 @@ namespace NuGetGallery.Operations
         {
             Log.Info("Generate reports begin");
 
+            /*
             CreateReport_PerMonth();
             CreateReport_RecentPopularityDetail();
             CreateReport_RecentPopularity();
+            */
+
+            CreateReport_RecentPackageUpdates();
 
             //TODO: comment this line back in when we want the "ten thousand reports" live
             //CreateAllPerPackageReports();
@@ -78,6 +83,67 @@ namespace NuGetGallery.Operations
             CreateBlob(RecentPopularity + ".json", JsonContentType, ReportHelpers.ToJson(report));
 
             CreatePerPackageReports(report);
+        }
+
+        private void CreateReport_RecentPackageUpdates()
+        {
+            Log.Info("CreateReport_RecentPackageUpdates");
+
+            Tuple<string[], List<string[]>> report = ExecuteSql("NuGetGallery.Operations.Scripts.DownloadReport_RecentPopularity.sql");
+
+            List<Tuple<string, string, int>> packageUpdateReport = new List<Tuple<string, string, int>>();
+
+            foreach (string[] row in report.Item2)
+            {
+                string packageId = row[0];
+
+                packageUpdateReport.Add(GetPackageUpdate(packageId));
+            }
+
+            packageUpdateReport.Sort((x, y) => { return (x.Item3 < y.Item3 ? -1 : 1); });
+
+            Stream content = ReportHelpers.ToJson("PackageId", "PackageVersion", "Days", packageUpdateReport);
+
+            CreateBlob(RecentPackageUpdates + ".json", JsonContentType, content);
+        }
+
+        //DEBUG DEBUG DEBUG
+        private static void Dump(List<Tuple<string, string, int>> packageUpdateReport)
+        {
+            foreach (Tuple<string, string, int> item in packageUpdateReport)
+            {
+                Console.WriteLine("{0} {1} {2} days ago", item.Item1, item.Item2, item.Item3);
+            }
+        }
+
+        private Tuple<string, string, int> GetPackageUpdate(string packageId)
+        {
+            string sql = ResourceHelper.GetBatchFromSqlFile("NuGetGallery.Operations.Scripts.PackageReport_RecentUpdates.sql");
+
+            using (SqlConnection connection = new SqlConnection(ConnectionString))
+            {
+                connection.Open();
+
+                SqlCommand command = new SqlCommand(sql, connection);
+                command.CommandType = CommandType.Text;
+                command.CommandTimeout = 60 * 5;
+
+                command.Parameters.AddWithValue("PackageId", packageId);
+
+                SqlDataReader reader = command.ExecuteReader();
+
+                Tuple<string, string, int> result = new Tuple<string, string, int>(packageId, string.Empty, 0);
+
+                while (reader.Read())
+                {
+                    string version = reader.GetValue(0).ToString();
+                    int days = (int)reader.GetValue(1);
+
+                    result = new Tuple<string, string, int>(packageId, version, days);
+                }
+
+                return result;
+            }
         }
 
         private void CreatePerPackageReports(Tuple<string[], List<string[]>> report)
