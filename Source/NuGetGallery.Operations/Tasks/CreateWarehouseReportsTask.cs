@@ -78,7 +78,7 @@ namespace NuGetGallery.Operations
         {
             Log.Info("CreateReport_RecentPopularity");
 
-            Tuple<string[], List<string[]>> report = ExecuteSql("NuGetGallery.Operations.Scripts.DownloadReport_RecentPopularity.sql");
+            Tuple<string[], List<string[]>> report = ExecuteSql("NuGetGallery.Operations.Scripts.DownloadReport_RecentPopularity.sql", 100);
 
             CreateBlob(RecentPopularity + ".json", JsonContentType, ReportHelpers.ToJson(report));
 
@@ -89,7 +89,7 @@ namespace NuGetGallery.Operations
         {
             Log.Info("CreateReport_RecentPackageUpdates");
 
-            Tuple<string[], List<string[]>> report = ExecuteSql("NuGetGallery.Operations.Scripts.DownloadReport_RecentPopularity.sql");
+            Tuple<string[], List<string[]>> report = ExecuteSql("NuGetGallery.Operations.Scripts.DownloadReport_RecentPopularity.sql", 1000);
 
             List<Tuple<string, string, int>> packageUpdateReport = new List<Tuple<string, string, int>>();
 
@@ -97,7 +97,11 @@ namespace NuGetGallery.Operations
             {
                 string packageId = row[0];
 
-                packageUpdateReport.Add(GetPackageUpdate(packageId));
+                Tuple<string, string, int> result = GetPackageUpdate(packageId);
+                if (result != null)
+                {
+                    packageUpdateReport.Add(result);
+                }
             }
 
             packageUpdateReport.Sort((x, y) => { return (x.Item3 < y.Item3 ? -1 : 1); });
@@ -132,17 +136,15 @@ namespace NuGetGallery.Operations
 
                 SqlDataReader reader = command.ExecuteReader();
 
-                Tuple<string, string, int> result = new Tuple<string, string, int>(packageId, string.Empty, 0);
-
                 while (reader.Read())
                 {
                     string version = reader.GetValue(0).ToString();
                     int days = (int)reader.GetValue(1);
 
-                    result = new Tuple<string, string, int>(packageId, version, days);
+                    return new Tuple<string, string, int>(packageId, version, days);
                 }
 
-                return result;
+                return null;
             }
         }
 
@@ -242,7 +244,7 @@ namespace NuGetGallery.Operations
 
             string name = PackageReportBaseName + packageId.ToLowerInvariant();
 
-            Tuple<string[], List<string[]>> report = ExecuteSql("NuGetGallery.Operations.Scripts.DownloadReport_RecentPopularityByPackage.sql", new Tuple<string, string>("@packageId", packageId));
+            Tuple<string[], List<string[]>> report = ExecuteSql("NuGetGallery.Operations.Scripts.DownloadReport_RecentPopularityByPackage.sql", null, new Tuple<string, string>("@packageId", packageId));
 
             CreateBlob(name + ".json", JsonContentType, ReportHelpers.ToJson(report));
         }
@@ -265,7 +267,7 @@ namespace NuGetGallery.Operations
             }
         }
 
-        private Tuple<string[], List<string[]>> ExecuteSql(string filename, params Tuple<string, string>[] parameters)
+        private Tuple<string[], List<string[]>> ExecuteSql(string filename, int? top = null, params Tuple<string, string>[] parameters)
         {
             string sql = ResourceHelper.GetBatchFromSqlFile(filename);
 
@@ -279,6 +281,11 @@ namespace NuGetGallery.Operations
                 SqlCommand command = new SqlCommand(sql, connection);
                 command.CommandType = CommandType.Text;
                 command.CommandTimeout = 60 * 5;
+
+                if (top != null)
+                {
+                    command.Parameters.Add("@top", top);
+                }
 
                 foreach (Tuple<string, string> parameter in parameters)
                 {
