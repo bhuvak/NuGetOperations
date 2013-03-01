@@ -42,13 +42,11 @@ namespace NuGetGallery.Operations
         {
             Log.Info("Generate reports begin");
 
-            /*
             CreateReport_PerMonth();
             CreateReport_RecentPopularityDetail();
             CreateReport_RecentPopularity();
-            */
 
-            CreateReport_RecentPackageUpdates();
+            CreateReport_NewPackages();
 
             //TODO: comment this line back in when we want the "ten thousand reports" live
             //CreateAllPerPackageReports();
@@ -85,44 +83,51 @@ namespace NuGetGallery.Operations
             CreatePerPackageReports(report);
         }
 
-        private void CreateReport_RecentPackageUpdates()
+        private void CreateReport_NewPackages()
         {
-            Log.Info("CreateReport_RecentPackageUpdates");
+            //  packageId, packageVersion, created
+            List<Tuple<string, string, DateTime>> newPackages = GetNewPackages();
 
-            Tuple<string[], List<string[]>> report = ExecuteSql("NuGetGallery.Operations.Scripts.DownloadReport_RecentPopularity.sql", 1000);
+            //  packageId, packageVersion, created, downloads-so-far
+            List<Tuple<string, string, DateTime, int>> report = new List<Tuple<string, string, DateTime, int>>();
 
-            List<Tuple<string, string, int>> packageUpdateReport = new List<Tuple<string, string, int>>();
+            int top = 0;
 
-            foreach (string[] row in report.Item2)
+            do
             {
-                string packageId = row[0];
+                top += 500;
+                report.Clear();
 
-                Tuple<string, string, int> result = GetPackageUpdate(packageId);
-                if (result != null)
+                IDictionary<string, int> topPackages = GetTopPackages(top);
+
+                foreach (Tuple<string, string, DateTime> newPackage in newPackages)
                 {
-                    packageUpdateReport.Add(result);
+                    int downloads = 0;
+                    if (topPackages.TryGetValue(newPackage.Item1, out downloads))
+                    {
+                        report.Add(new Tuple<string, string, DateTime, int>(newPackage.Item1, newPackage.Item2, newPackage.Item3, downloads));
+                    }
                 }
+
+                report.Sort((x, y) => { return (x.Item4 < y.Item4 ? -1 : 1); });
+                report.Reverse();
+
+                Log.Info(string.Format("CreateReport_NewPackages {0} new packages, {1} in the top {2} most popular", newPackages.Count, report.Count, top));
             }
+            while (report.Count < 10);
 
-            packageUpdateReport.Sort((x, y) => { return (x.Item3 < y.Item3 ? -1 : 1); });
-
-            Stream content = ReportHelpers.ToJson("PackageId", "PackageVersion", "Days", packageUpdateReport);
+            Stream content = ReportHelpers.RecentPackageUpdatesToJson(report);
 
             CreateBlob(RecentPackageUpdates + ".json", JsonContentType, content);
         }
 
-        //DEBUG DEBUG DEBUG
-        private static void Dump(List<Tuple<string, string, int>> packageUpdateReport)
+        private List<Tuple<string, string, DateTime>> GetNewPackages()
         {
-            foreach (Tuple<string, string, int> item in packageUpdateReport)
-            {
-                Console.WriteLine("{0} {1} {2} days ago", item.Item1, item.Item2, item.Item3);
-            }
-        }
+            // Note: this query hits the Gallery NOT the Warehouse
 
-        private Tuple<string, string, int> GetPackageUpdate(string packageId)
-        {
-            string sql = ResourceHelper.GetBatchFromSqlFile("NuGetGallery.Operations.Scripts.PackageReport_RecentUpdates.sql");
+            string sql = ResourceHelper.GetBatchFromSqlFile("NuGetGallery.Operations.Scripts.PackageReport_NewPackages.sql");
+
+            List<Tuple<string, string, DateTime>> result = new List<Tuple<string, string, DateTime>>();
 
             using (SqlConnection connection = new SqlConnection(ConnectionString))
             {
@@ -132,20 +137,33 @@ namespace NuGetGallery.Operations
                 command.CommandType = CommandType.Text;
                 command.CommandTimeout = 60 * 5;
 
-                command.Parameters.AddWithValue("PackageId", packageId);
-
                 SqlDataReader reader = command.ExecuteReader();
 
                 while (reader.Read())
                 {
-                    string version = reader.GetValue(0).ToString();
-                    int days = (int)reader.GetValue(1);
+                    string packageId = reader.GetValue(0).ToString();
+                    string packageVersion = reader.GetValue(1).ToString();
+                    DateTime created = reader.GetDateTime(2);
 
-                    return new Tuple<string, string, int>(packageId, version, days);
+                    result.Add(new Tuple<string, string, DateTime>(packageId, packageVersion, created));
                 }
-
-                return null;
             }
+
+            return result;
+        }
+
+        private IDictionary<string, int> GetTopPackages(int top)
+        {
+            IDictionary<string, int> result = new Dictionary<string, int>();
+
+            Tuple<string[], List<string[]>> report = ExecuteSql("NuGetGallery.Operations.Scripts.DownloadReport_RecentPopularity.sql", top);
+
+            foreach (string[] item in report.Item2)
+            {
+                result[item[0]] = int.Parse(item[1]);
+            }
+
+            return result;
         }
 
         private void CreatePerPackageReports(Tuple<string[], List<string[]>> report)

@@ -212,7 +212,7 @@
     <EmbeddedResource Include="Scripts\DownloadReport_RecentPopularity.sql" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Scripts\PackageReport_RecentUpdates.sql" />
+    <EmbeddedResource Include="Scripts\PackageReport_NewPackages.sql" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="$(SolutionDir)\.nuget\nuget.targets" />

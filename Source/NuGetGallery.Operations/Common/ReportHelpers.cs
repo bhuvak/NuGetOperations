@@ -8,6 +8,16 @@ namespace NuGetGallery.Operations.Common
 {
     static class ReportHelpers
     {
+        private static Stream ToStream(JToken jToken)
+        {
+            MemoryStream stream = new MemoryStream();
+            TextWriter writer = new StreamWriter(stream);
+            writer.Write(jToken.ToString());
+            writer.Flush();
+            stream.Seek(0, SeekOrigin.Begin);
+            return stream;
+        }
+
         public static Stream ToJson(Tuple<string[], List<string[]>> report)
         {
             JArray jArray = new JArray();
@@ -24,36 +34,25 @@ namespace NuGetGallery.Operations.Common
                 jArray.Add(jObject);
             }
 
-            MemoryStream stream = new MemoryStream();
-            TextWriter writer = new StreamWriter(stream);
-            writer.Write(jArray.ToString());
-            writer.Flush();
-            stream.Seek(0, SeekOrigin.Begin);
-            return stream;
+            return ToStream(jArray);
         }
 
-        //TODO: consider replacing the above function with the follow everywhere
-
-        public static Stream ToJson(string col1, string col2, string col3, List<Tuple<string, string, int>> rows)
+        public static Stream RecentPackageUpdatesToJson(List<Tuple<string, string, DateTime, int>> rows)
         {
             JArray jArray = new JArray();
 
-            foreach (Tuple<string, string, int> row in rows)
+            foreach (Tuple<string, string, DateTime, int> row in rows)
             {
                 JObject jObject = new JObject();
-                jObject.Add(col1, row.Item1);
-                jObject.Add(col2, row.Item2);
-                jObject.Add(col3, row.Item3);
+                jObject.Add("PackageId", row.Item1);
+                jObject.Add("PackageVersion", row.Item2);
+                jObject.Add("Created", row.Item3);
+                // the last column here was just for ordering, we don't want it in the report because the number is confusing
 
                 jArray.Add(jObject);
             }
 
-            MemoryStream stream = new MemoryStream();
-            TextWriter writer = new StreamWriter(stream);
-            writer.Write(jArray.ToString());
-            writer.Flush();
-            stream.Seek(0, SeekOrigin.Begin);
-            return stream;
+            return ToStream(jArray);
         }
 
         public static void Dump(Stream json)
