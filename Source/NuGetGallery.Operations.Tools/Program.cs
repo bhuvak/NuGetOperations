@@ -7,6 +7,7 @@ using NuGet;
 using NLog.Config;
 using NLog.Targets;
 using NLog;
+using NuGetGallery.Operations.Infrastructure;
 
 namespace NuGetGallery.Operations.Tools
 {
@@ -97,25 +98,7 @@ namespace NuGetGallery.Operations.Tools
         private static void ConfigureLogs()
         {
             // Just a simple logging mechanism
-            ColoredConsoleTarget consoleTarget = new ColoredConsoleTarget
-            {
-                Layout = "${pad:padding=4:fixedLength=true:inner=${replace:searchFor=debug:replaceWith=dbg:inner=${replace:searchFor=error:replaceWith=err:inner=${level:lowercase=true}}}}: ${message}",
-                UseDefaultRowHighlightingRules = false,
-                WordHighlightingRules =
-                {
-                    new ConsoleWordHighlightingRule("info", ConsoleOutputColor.Green, ConsoleOutputColor.NoChange),
-                    new ConsoleWordHighlightingRule("err", ConsoleOutputColor.Red, ConsoleOutputColor.NoChange),
-                    new ConsoleWordHighlightingRule("dbg", ConsoleOutputColor.Magenta, ConsoleOutputColor.NoChange),
-                    new ConsoleWordHighlightingRule("Curated", ConsoleOutputColor.Green, ConsoleOutputColor.NoChange)
-                    {
-                        WholeWords = true
-                    },
-                    new ConsoleWordHighlightingRule("Ignored", ConsoleOutputColor.Gray, ConsoleOutputColor.NoChange)
-                    {
-                        WholeWords = true
-                    },
-                }
-            };
+            var consoleTarget = new SnazzyConsoleTarget() { Layout = "${message}" };
 
             LoggingConfiguration config = new LoggingConfiguration();
             config.AddTarget("console", consoleTarget);
