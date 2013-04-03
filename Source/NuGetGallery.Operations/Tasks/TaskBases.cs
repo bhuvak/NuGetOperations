@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Data.SqlClient;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
 using NuGetGallery.Operations.Common;
@@ -22,52 +23,91 @@ namespace NuGetGallery.Operations
             return StorageAccount.CreateCloudBlobClient();
         }
 
-        public StorageTask()
-        {
-            string defaultCs = Environment.GetEnvironmentVariable("NUGET_GALLERY_MAIN_STORAGE");
-            if (!String.IsNullOrEmpty(defaultCs))
-            {
-                StorageAccount = CloudStorageAccount.Parse(defaultCs);
-            }
-        }
-
         public override void ValidateArguments()
         {
-            ArgCheck.RequiredOrEnv(StorageAccount, "StorageAccount", "NUGET_GALLERY_MAIN_STORAGE");
+            base.ValidateArguments();
+
+            if (CurrentEnvironment != null && StorageAccount == null)
+            {
+                StorageAccount = CurrentEnvironment.MainStorage;
+            }
+            ArgCheck.RequiredOrConfig(StorageAccount, "StorageAccount");
         }
     }
 
     public abstract class DatabaseTask : OpsTask
     {
         [Option("Connection string to the database server", AltName = "db")]
-        public string ConnectionString { get; set; }
-
-        public DatabaseTask()
-        {
-            // Load defaults from environment
-            ConnectionString = Environment.GetEnvironmentVariable("NUGET_GALLERY_MAIN_CONNECTION_STRING");
-        }
+        public SqlConnectionStringBuilder ConnectionString { get; set; }
 
         public override void ValidateArguments()
         {
-            ArgCheck.RequiredOrEnv(ConnectionString, "ConnectionString", "NUGET_GALLERY_MAIN_CONNECTION_STRING");
+            base.ValidateArguments();
+
+            // Load defaults from environment
+            if (CurrentEnvironment != null && ConnectionString == null)
+            {
+                ConnectionString = CurrentEnvironment.MainDatabase;
+            }
+
+            ArgCheck.RequiredOrConfig(ConnectionString, "ConnectionString");
+        }
+    }
+
+    public abstract class WarehouseTask : OpsTask
+    {
+        [Option("Connection string to the warehouse database server", AltName = "db")]
+        public SqlConnectionStringBuilder ConnectionString { get; set; }
+
+        public override void ValidateArguments()
+        {
+            base.ValidateArguments();
+
+            // Load defaults from environment
+            if (CurrentEnvironment != null && ConnectionString == null)
+            {
+                ConnectionString = CurrentEnvironment.WarehouseDatabase;
+            }
+
+            ArgCheck.RequiredOrConfig(ConnectionString, "ConnectionString");
+        }
+    }
+
+    public abstract class ReportsTask : WarehouseTask
+    {
+        [Option("Connection string to the warehouse reports container", AltName = "wracc")]
+        public CloudStorageAccount ReportStorage { get; set; }
+
+        public override void ValidateArguments()
+        {
+            base.ValidateArguments();
+
+            // Load defaults from environment
+            if (CurrentEnvironment != null && ReportStorage == null)
+            {
+                ReportStorage = CurrentEnvironment.ReportStorage;
+            }
+
+            ArgCheck.RequiredOrConfig(ReportStorage, "ReportStorage");
         }
     }
 
     public abstract class DatabaseAndStorageTask : StorageTask
     {
         [Option("Connection string to the database server", AltName = "db")]
-        public string ConnectionString { get; set; }
-
-        public DatabaseAndStorageTask()
-        {
-            // Load defaults from environment
-            ConnectionString = Environment.GetEnvironmentVariable("NUGET_GALLERY_MAIN_CONNECTION_STRING");
-        }
+        public SqlConnectionStringBuilder ConnectionString { get; set; }
 
         public override void ValidateArguments()
         {
-            ArgCheck.RequiredOrEnv(ConnectionString, "ConnectionString", "NUGET_GALLERY_MAIN_CONNECTION_STRING");
+            base.ValidateArguments();
+
+            // Load defaults from environment
+            if (CurrentEnvironment != null && ConnectionString == null)
+            {
+                ConnectionString = CurrentEnvironment.MainDatabase;
+            }
+
+            ArgCheck.RequiredOrConfig(ConnectionString, "ConnectionString");
         }
     }
 
@@ -81,6 +121,14 @@ namespace NuGetGallery.Operations
 
         [Option("The Hash of the package", AltName = "h")]
         public string PackageHash { get; set; }
+
+        public override void ValidateArguments()
+        {
+            base.ValidateArguments();
+            ArgCheck.Required(PackageId, "PackageId");
+            ArgCheck.Required(PackageVersion, "PackageVersion");
+            ArgCheck.Required(PackageHash, "PackageHash");
+        }
     }
 
     public abstract class DatabasePackageVersionTask : DatabaseAndStorageTask

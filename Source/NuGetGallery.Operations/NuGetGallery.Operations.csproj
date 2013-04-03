@@ -100,8 +100,10 @@
     <Compile Include="Common\CommandLineConstants.cs" />
     <Compile Include="Common\ArgCheck.cs" />
     <Compile Include="Common\ReportHelpers.cs" />
+    <Compile Include="Common\SqlConnectionStringConverter.cs" />
     <Compile Include="Common\SqlHelper.cs" />
     <Compile Include="Common\StreamConverter.cs" />
+    <Compile Include="DeploymentEnvironment.cs" />
     <Compile Include="Infrastructure\CommandLineParser.cs" />
     <Compile Include="Tasks\BackupDatabaseTask.cs" />
     <Compile Include="Tasks\BackupPackageFileTask.cs" />
@@ -141,7 +143,8 @@
     <Compile Include="Infrastructure\ICommandManager.cs" />
     <Compile Include="Infrastructure\Verbosity.cs" />
     <Compile Include="Tasks\DeleteUserTask.cs" />
-    <Compile Include="Tasks\LowerCaseAllPackageBlobs.cs" />
+    <Compile Include="Tasks\ListDeploymentSettingsTask.cs" />
+    <Compile Include="Tasks\LowerCaseAllPackageBlobsTask.cs" />
     <Compile Include="Tasks\IBackupDatabase.cs" />
     <Compile Include="Tasks\OpsTask.cs" />
     <Compile Include="Tasks\PopulatePackageFrameworksTask.cs" />
