@@ -114,11 +114,13 @@ namespace NuGetGallery.Monitoring.Http
                 var timeoutDelta = target.MaximumTimeout - target.ExpectedTimeout;
                 
                 // Wait for the request OR the expected timeout
+                Trace.WriteLine(String.Format("-> HTTP {0} {1}", target.Method, target.Url.AbsoluteUri));
                 var requestTask = client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
                 if (requestTask.Wait(target.ExpectedTimeout))
                 {
                     return TaskEx.FromResult(CheckRequest(target, requestTask));
                 }
+                Trace.WriteLine(String.Format("Soft timeout fired: {0}ms", target.ExpectedTimeout.TotalMilliseconds));
 
                 // Intermediate timeout expired. Report unhealthy and keep waiting
                 if(reportUnhealthy != null) {
@@ -129,6 +131,7 @@ namespace NuGetGallery.Monitoring.Http
                 {
                     return TaskEx.FromResult(CheckRequest(target, requestTask));
                 }
+                Trace.WriteLine(String.Format("Hard timeout fired: {0}ms", target.MaximumTimeout.TotalMilliseconds));
                 return TaskEx.FromResult(Tuple.Create("Maximum Timeout Exceeded", EventType.Failure));
             });
 
@@ -146,7 +149,8 @@ namespace NuGetGallery.Monitoring.Http
         {
             Debug.Assert(requestTask.IsCompleted);
             var response = requestTask.Result;
-            
+            Trace.WriteLine(String.Format("<- HTTP {0} {1}", (int)response.StatusCode, response.ReasonPhrase));
+                    
             var message = String.Format("HTTP {0} {1}", (int)response.StatusCode, response.ReasonPhrase);
 
             if (target.ExpectedStatusCode != null)
