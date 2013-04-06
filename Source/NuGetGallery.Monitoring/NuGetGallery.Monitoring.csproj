@@ -79,6 +79,7 @@
     <Compile Include="MonitorSet.cs" />
     <Compile Include="EventType.cs" />
     <Compile Include="IEventReporter.cs" />
+    <Compile Include="Sql\SqlIndexFragmentationMonitor.cs" />
     <Compile Include="TraceEventReporter.cs" />
     <Compile Include="MonitoringEvent.cs" />
     <Compile Include="ApplicationMonitor.cs" />

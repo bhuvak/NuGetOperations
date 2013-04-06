@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using NuGetGallery.Monitoring;
 using NuGetGallery.Monitoring.Http;
+using NuGetGallery.Monitoring.Sql;
 
 namespace Monitor
 {
@@ -13,7 +14,13 @@ namespace Monitor
     {
         static void Main(string[] args)
         {
-            RunHttpMonitor();
+            //RunHttpMonitor();
+            RunDatabaseMonitors();
+        }
+
+        private static void RunDatabaseMonitors()
+        {
+            
         }
 
         private static void RunHttpMonitor()

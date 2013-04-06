@@ -27,7 +27,7 @@ namespace NuGetGallery.Monitoring
             CancelToken = cancelToken;
             Period = period;
 
-            _trace = new TraceSourceTrace(set.Name + "." + monitor.Name);
+            _trace = new TraceSourceTrace(set.Name + ":" + monitor.Name);
 
             Task = Task.Factory.StartNew(Run, CancelToken, TaskCreationOptions.LongRunning, TaskScheduler.Current);
         }

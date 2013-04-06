@@ -121,10 +121,9 @@ namespace NuGetGallery.Monitoring
                 Console.ForegroundColor = foreground;
                 Console.Write(": " + line);
             }
-            Console.WriteLine();
-            
             Console.ForegroundColor = oldForeground;
             Console.BackgroundColor = oldBackground;
+            Console.WriteLine();
         }
 
         public override void Write(string message)

@@ -44,8 +44,18 @@ namespace NuGetGallery.Monitoring
 
         private void HandleQoSEvent(MonitoringEvent evt)
         {
-            var qosMessage = FormatQoS((MonitoringQoSEvent)evt);
-            _source.TraceEvent(TraceEventType.Information, id: 0, message: (evt.Action + (String.IsNullOrEmpty(qosMessage) ? String.Empty : (" " + qosMessage))));
+            _source.TraceEvent(TraceEventType.Information, id: 0, message: FormatQoSEvent((MonitoringQoSEvent)evt));
+        }
+
+        private string FormatEvent(MonitoringEvent evt)
+        {
+            return String.Format("{0}:{1}", evt.Resource, evt.Action);
+        }
+
+        private string FormatQoSEvent(MonitoringQoSEvent evt)
+        {
+            var qosMessage = FormatQoS(evt);
+            return String.Format("{0}:{1}{2}", evt.Resource, evt.Action, String.IsNullOrEmpty(qosMessage) ? String.Empty : (" " + qosMessage));
         }
 
         private void HandleEvent(MonitoringEvent evt)
@@ -55,7 +65,7 @@ namespace NuGetGallery.Monitoring
             {
                 type = TraceEventType.Verbose;
             }
-            _source.TraceEvent(type, id: 0, message: evt.Action);
+            _source.TraceEvent(type, id: 0, message: FormatEvent(evt));
         }
 
         private string FormatQoS(MonitoringQoSEvent evt)
