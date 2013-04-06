@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace NuGetGallery.Monitoring
+namespace NuGetGallery.Monitoring.Sql
 {
     public abstract class SqlDatabaseMonitorBase : SqlMonitorBase
     {
