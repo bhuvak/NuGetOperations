@@ -34,11 +34,12 @@ namespace NuGetGallery.Monitoring.Http
             }
         }
 
-        public HttpMonitor(HttpPingTarget target) : this(target, null)
+        public HttpMonitor(string name, HttpPingTarget target)
+            : this(name, target, null)
         {
         }
 
-        public HttpMonitor(HttpPingTarget target, HttpPingTarget knownGoodSite)
+        public HttpMonitor(string name, HttpPingTarget target, HttpPingTarget knownGoodSite) : base(name)
         {
             Target = target;
             KnownGoodSite = knownGoodSite;
@@ -79,7 +80,7 @@ namespace NuGetGallery.Monitoring.Http
                 }
                 else
                 {
-                    MonitorFailure("Known Good Site Failed. Monitor is unable to connect to the internet.");
+                    MonitorFailure("Known Good Site Failed.");
                 }
             }
         }
@@ -114,13 +115,13 @@ namespace NuGetGallery.Monitoring.Http
                 var timeoutDelta = target.MaximumTimeout - target.ExpectedTimeout;
                 
                 // Wait for the request OR the expected timeout
-                Trace.WriteLine(String.Format("-> HTTP {0} {1}", target.Method, target.Url.AbsoluteUri));
+                Trace.Verbose("-> HTTP {0} {1}", target.Method, target.Url.AbsoluteUri);
                 var requestTask = client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
                 if (requestTask.Wait(target.ExpectedTimeout))
                 {
                     return TaskEx.FromResult(CheckRequest(target, requestTask));
                 }
-                Trace.WriteLine(String.Format("Soft timeout fired: {0}ms", target.ExpectedTimeout.TotalMilliseconds));
+                Trace.Warning("Soft timeout fired: {0}ms", target.ExpectedTimeout.TotalMilliseconds);
 
                 // Intermediate timeout expired. Report unhealthy and keep waiting
                 if(reportUnhealthy != null) {
@@ -131,7 +132,7 @@ namespace NuGetGallery.Monitoring.Http
                 {
                     return TaskEx.FromResult(CheckRequest(target, requestTask));
                 }
-                Trace.WriteLine(String.Format("Hard timeout fired: {0}ms", target.MaximumTimeout.TotalMilliseconds));
+                Trace.Error("Hard timeout fired: {0}ms", target.MaximumTimeout.TotalMilliseconds);
                 return TaskEx.FromResult(Tuple.Create("Maximum Timeout Exceeded", EventType.Failure));
             });
 
@@ -145,11 +146,11 @@ namespace NuGetGallery.Monitoring.Http
             }
         }
 
-        private static Tuple<string, EventType> CheckRequest(HttpPingTarget target, Task<HttpResponseMessage> requestTask)
+        private Tuple<string, EventType> CheckRequest(HttpPingTarget target, Task<HttpResponseMessage> requestTask)
         {
             Debug.Assert(requestTask.IsCompleted);
             var response = requestTask.Result;
-            Trace.WriteLine(String.Format("<- HTTP {0} {1}", (int)response.StatusCode, response.ReasonPhrase));
+            Trace.Verbose("<- HTTP {0} {1}", (int)response.StatusCode, response.ReasonPhrase);
                     
             var message = String.Format("HTTP {0} {1}", (int)response.StatusCode, response.ReasonPhrase);
 

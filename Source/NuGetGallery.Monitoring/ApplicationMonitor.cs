@@ -10,19 +10,25 @@ namespace NuGetGallery.Monitoring
 {
     public abstract class ApplicationMonitor
     {
+        public string Name { get; private set; }
+
         protected IEventReporter Reporter { get; private set; }
         protected CancellationToken CancelToken { get; private set; }
+        protected ITrace Trace { get; private set; }
 
         protected virtual string DefaultResourceName { get { return null; } }
-        
-        public virtual async Task Invoke(IEventReporter reporter, CancellationToken cancelToken)
+
+        protected ApplicationMonitor(string name)
         {
-            var oldrep = Reporter; // Just in case, let's capture the old reporter
+            Name = name;
+        }
+        
+        public virtual async Task Invoke(IEventReporter reporter, CancellationToken cancelToken, ITrace trace)
+        {
+            Trace = trace;
             Reporter = reporter;
             CancelToken = cancelToken;
             await Invoke();
-            Reporter = oldrep;
-            CancelToken = CancellationToken.None;
         }
 
         protected abstract Task Invoke();

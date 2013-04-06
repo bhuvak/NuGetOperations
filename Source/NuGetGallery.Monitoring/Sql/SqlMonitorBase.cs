@@ -19,7 +19,7 @@ namespace NuGetGallery.Monitoring.Sql
 
         protected override string DefaultResourceName { get { return FormatResourceName(); } }
         
-        protected SqlMonitorBase(string server, string user, string password) {
+        protected SqlMonitorBase(string name, string server, string user, string password) : base(name) {
             Server = server;
             User = user;
             Password = password;

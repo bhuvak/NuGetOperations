@@ -11,7 +11,7 @@ namespace NuGetGallery.Monitoring.Azure
 {
     public class BlobDownloadTimeMonitor : AzureBlobMonitorBase
     {
-        public BlobDownloadTimeMonitor(string blobPath, string accountName, bool useHttps) : base(blobPath, accountName, useHttps) { }
+        public BlobDownloadTimeMonitor(string name, string blobPath, string accountName, bool useHttps) : base(name, blobPath, accountName, useHttps) { }
 
         protected override async Task Invoke()
         {

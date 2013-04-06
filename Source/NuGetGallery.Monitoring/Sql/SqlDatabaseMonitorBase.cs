@@ -11,7 +11,7 @@ namespace NuGetGallery.Monitoring.Sql
     {
         public string Database { get; private set; }
         
-        public SqlDatabaseMonitorBase(string server, string database, string user, string password) : base(server, user, password)
+        public SqlDatabaseMonitorBase(string name, string server, string database, string user, string password) : base(name, server, user, password)
         {
             Database = database;
         }

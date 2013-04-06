@@ -8,7 +8,7 @@ namespace NuGetGallery.Monitoring.Sql
 {
     public class SqlServerRunningMonitor : SqlMonitorBase
     {
-        public SqlServerRunningMonitor(string server, string user, string password) : base(server, user, password) { }
+        public SqlServerRunningMonitor(string name, string server, string user, string password) : base(name, server, user, password) { }
 
         protected override Task Invoke()
         {

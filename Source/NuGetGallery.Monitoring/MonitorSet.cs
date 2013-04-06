@@ -44,43 +44,11 @@ namespace NuGetGallery.Monitoring
         /// <returns>A task that completes when the monitor shuts down (i.e. cancelToken is cancelled)</returns>
         public virtual async Task Run(IEventReporter reporter, CancellationToken cancelToken)
         {
-            Trace.WriteLine(String.Format(
-                "[{0}][{1}] Host Started",
-                DateTime.UtcNow.ToString("HH:mm:ss.ff"),
-                Name));
+            // Create a worker thread for each monitor
+            var threads = Monitors.Select(monitor => new MonitorThread(Period, this, reporter, monitor, cancelToken));
 
-            while (!cancelToken.IsCancellationRequested)
-            {
-                Trace.WriteLine(String.Format(
-                    "[{0}][{1}] Cycle Started",
-                    DateTime.UtcNow.ToString("HH:mm:ss.ff"),
-                    Name));
-
-                foreach (ApplicationMonitor monitor in Monitors)
-                {
-                    try
-                    {
-                        await monitor.Invoke(reporter, cancelToken);
-                    }
-                    catch (Exception ex)
-                    {
-                        Trace.WriteLine(String.Format(
-                            "[{0}][{1}] Unhandled Monitor Exception: \n{2}",
-                            DateTime.UtcNow.ToString("HH:mm:ss.ff"),
-                            Name,
-                            ex));
-                    }
-                }
-
-                Trace.WriteLine(String.Format(
-                    "[{0}][{1}] Cycle Complete, Sleeping for {2}",
-                    DateTime.UtcNow.ToString("HH:mm:ss.ff"),
-                    Name,
-                    Period));
-
-                // Wait until the next period
-                await TaskEx.Delay(Period, cancelToken);
-            }
+            // Run each thread until cancelled
+            await TaskEx.WhenAll(threads.Select(t => t.Task));
         }
     }
 }

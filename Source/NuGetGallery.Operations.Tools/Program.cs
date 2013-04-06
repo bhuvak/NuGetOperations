@@ -3,11 +3,11 @@ using System.Linq;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.ComponentModel.Composition.Hosting;
-using NuBot.Infrastructure;
 using NuGet;
 using NLog.Config;
 using NLog.Targets;
 using NLog;
+using NuGetGallery.Monitoring;
 
 namespace NuGetGallery.Operations.Tools
 {

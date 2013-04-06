@@ -1,37 +1,45 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
-using NLog;
-using NLog.Targets;
 using ColorPair = System.Tuple<System.ConsoleColor, System.ConsoleColor?>;
 
 namespace NuGetGallery.Monitoring
 {
-    public class SnazzyConsoleTarget : TargetWithLayout
+    public class SnazzyConsoleTarget : TraceListener
     {
-        private static readonly Dictionary<LogLevel, ColorPair> ColorTable = new Dictionary<LogLevel, ColorPair>()
+        private static readonly Dictionary<TraceEventType, ColorPair> ColorTable = new Dictionary<TraceEventType, ColorPair>()
         {
-            { LogLevel.Debug, new ColorPair(ConsoleColor.Magenta, null) },
-            { LogLevel.Error, new ColorPair(ConsoleColor.Red, null) },
-            { LogLevel.Fatal, new ColorPair(ConsoleColor.White, ConsoleColor.Red) },
-            { LogLevel.Info, new ColorPair(ConsoleColor.Green, null) },
-            { LogLevel.Trace, new ColorPair(ConsoleColor.DarkGray, null) },
-            { LogLevel.Warn, new ColorPair(ConsoleColor.Black, ConsoleColor.Yellow) }
+            { TraceEventType.Error, new ColorPair(ConsoleColor.Red, null) },
+            { TraceEventType.Critical, new ColorPair(ConsoleColor.White, ConsoleColor.Red) },
+            { TraceEventType.Information, new ColorPair(ConsoleColor.Green, null) },
+            { TraceEventType.Verbose, new ColorPair(ConsoleColor.DarkGray, null) },
+            { TraceEventType.Warning, new ColorPair(ConsoleColor.Black, ConsoleColor.Yellow) }
         };
 
-        private static readonly Dictionary<LogLevel, string> LevelNames = new Dictionary<LogLevel, string>() {
-            { LogLevel.Debug, "debug" },
-            { LogLevel.Error, "error" },
-            { LogLevel.Fatal, "fatal" },
-            { LogLevel.Info, "info" },
-            { LogLevel.Trace, "trace" },
-            { LogLevel.Warn, "warn" },
+        private static readonly Dictionary<TraceEventType, string> LevelNames = new Dictionary<TraceEventType, string>() {
+            { TraceEventType.Error, "error" },
+            { TraceEventType.Critical, "fatal" },
+            { TraceEventType.Information, "info" },
+            { TraceEventType.Verbose, "trace" },
+            { TraceEventType.Warning, "warn" },
         };
 
         private static readonly int LevelLength = LevelNames.Values.Max(s => s.Length);
 
-        protected override void Write(LogEventInfo logEvent)
+        public override void TraceEvent(TraceEventCache eventCache, string source, TraceEventType eventType, int id, string format, params object[] args)
         {
+            TraceEvent(eventCache, source, eventType, id, String.Format(format, args));
+        }
+
+        public override void TraceEvent(TraceEventCache eventCache, string source, TraceEventType eventType, int id, string message)
+        {
+            message = String.Format(
+                "({2})[{0}] {1}",
+                DateTime.UtcNow.ToString("HH:mm:ss.ff"),
+                message,
+                source);
+
             var oldForeground = Console.ForegroundColor;
             var oldBackground = Console.BackgroundColor;
 
@@ -43,26 +51,29 @@ namespace NuGetGallery.Monitoring
 
             // Get Color Pair colors
             ColorPair pair;
-            if (!ColorTable.TryGetValue(logEvent.Level, out pair))
+            if (!ColorTable.TryGetValue(eventType, out pair))
             {
                 pair = new ColorPair(Console.ForegroundColor, Console.BackgroundColor);
             }
             
             // Get level string
             string levelName;
-            if (!LevelNames.TryGetValue(logEvent.Level, out levelName))
+            if (!LevelNames.TryGetValue(eventType, out levelName))
             {
-                levelName = logEvent.Level.ToString();
+                levelName = eventType.ToString();
             }
             levelName = levelName.PadRight(LevelLength).Substring(0, LevelLength);
 
             // Break the message in to lines as necessary
-            var message = Layout.Render(logEvent);
             var existingLines = message.Split(new string[] {Environment.NewLine}, StringSplitOptions.None);
             var lines = new List<string>();
             foreach (var existingLine in existingLines)
             {
                 var prefix = levelName + ": ";
+                if (!String.IsNullOrEmpty(source))
+                {
+                    prefix += "(" + source + ")";
+                }
                 var fullMessage = prefix + existingLine;
                 var maxWidth = Console.BufferWidth - 2;
                 var currentLine = existingLine;
@@ -114,6 +125,16 @@ namespace NuGetGallery.Monitoring
             
             Console.ForegroundColor = oldForeground;
             Console.BackgroundColor = oldBackground;
+        }
+
+        public override void Write(string message)
+        {
+            TraceEvent(null, null, TraceEventType.Verbose, id: 0, message: message); 
+        }
+
+        public override void WriteLine(string message)
+        {
+            TraceEvent(null, null, TraceEventType.Verbose, id: 0, message: message + Environment.NewLine);
         }
     }
 }

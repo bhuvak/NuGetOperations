@@ -21,14 +21,14 @@ namespace NuGetGallery.Monitoring.Azure
         public Uri TableEndpoint { get; private set; }
         public Uri QueueEndpoint { get; private set; }
 
-        protected AzureStorageMonitorBase(string accountName, bool useHttps) {
+        protected AzureStorageMonitorBase(string name, string accountName, bool useHttps) : base(name) {
             AccountName = accountName;
             BlobEndpoint = GetFullEndpoint(AccountName, "blob", useHttps);
             QueueEndpoint = GetFullEndpoint(AccountName, "queue", useHttps);
             TableEndpoint = GetFullEndpoint(AccountName, "table", useHttps);
         }
         
-        protected AzureStorageMonitorBase(string accountName, string sharedAccessSignature, bool useHttps) : this(accountName, useHttps)
+        protected AzureStorageMonitorBase(string name, string accountName, string sharedAccessSignature, bool useHttps) : this(name, accountName, useHttps)
         {
             SharedAccessSignature = sharedAccessSignature;
         }

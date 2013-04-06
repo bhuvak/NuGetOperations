@@ -18,9 +18,16 @@ namespace Monitor
 
         private static void RunHttpMonitor()
         {
-            ConsoleMonitorRunner.Run("HTTP", TimeSpan.Zero, new HttpMonitor(
-                new HttpPingTarget(new Uri("http://www.nuget.org/")),
-                new HttpPingTarget(new Uri("http://www.bing.com/"))));
+            var knownGood = new HttpPingTarget(new Uri("http://www.bing.com/"));
+            ConsoleMonitorRunner.Run("http", TimeSpan.Zero,
+                new HttpMonitor(
+                    "nuget.org",
+                    new HttpPingTarget(new Uri("http://www.nuget.org/")),
+                    knownGood),
+                new HttpMonitor(
+                    "nuget.org/api/v2/Packages",
+                    new HttpPingTarget(new Uri("http://www.nuget.org/api/v2/Packages")),
+                    knownGood));
         }
     }
 }

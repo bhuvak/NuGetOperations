@@ -22,13 +22,16 @@ namespace NuGetGallery.Monitoring
 
         public static void Run(MonitorSet monitorSet)
         {
-            Trace.Listeners.Add(new ConsoleTraceListener(useErrorStream: true));
-            Console.WriteLine("Starting Monitors...");
-
+            Trace.Listeners.Add(new SnazzyConsoleTarget());
+            
             // Start the runners
+            var traceSource = new TraceSource("Monitors", SourceLevels.All);
+            traceSource.Listeners.Clear();
+            traceSource.Listeners.AddRange(Trace.Listeners);
+
             var cancelSource = new CancellationTokenSource();
             var task = monitorSet
-                .Run(new ColoredConsoleEventReporter(), cancelSource.Token)
+                .Run(new TraceEventReporter(traceSource), cancelSource.Token)
                 .ContinueWith(t =>
                 {
                     if (t.IsFaulted)

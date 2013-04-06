@@ -16,8 +16,8 @@ namespace NuGetGallery.Monitoring.Azure
             get { return BlobUrl.AbsoluteUri; }
         }
 
-        protected AzureBlobMonitorBase(string blobPath, string accountName, bool useHttps)
-            : base(accountName, useHttps)
+        protected AzureBlobMonitorBase(string name, string blobPath, string accountName, bool useHttps)
+            : base(name, accountName, useHttps)
         {
             BlobPath = blobPath;
             BlobUrl = new UriBuilder(BlobEndpoint)
