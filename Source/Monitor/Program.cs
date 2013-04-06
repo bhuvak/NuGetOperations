@@ -13,14 +13,13 @@ namespace Monitor
     {
         static void Main(string[] args)
         {
-            //Trace.Listeners.Add(new ConsoleTraceListener(useErrorStream: true));
             RunHttpMonitor();
         }
 
         private static void RunHttpMonitor()
         {
             ConsoleMonitorRunner.Run("HTTP", TimeSpan.Zero, new HttpMonitor(
-                new HttpPingTarget(new Uri("http://nugetgallery-qa.cloudapp.net/")),
+                new HttpPingTarget(new Uri("http://www.nuget.org/")),
                 new HttpPingTarget(new Uri("http://www.bing.com/"))));
         }
     }

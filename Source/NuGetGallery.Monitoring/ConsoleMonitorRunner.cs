@@ -22,7 +22,7 @@ namespace NuGetGallery.Monitoring
 
         public static void Run(MonitorSet monitorSet)
         {
-            Trace.Listeners.Add(new ConsoleTraceListener());
+            Trace.Listeners.Add(new ConsoleTraceListener(useErrorStream: true));
             Console.WriteLine("Starting Monitors...");
 
             // Start the runners
