@@ -20,6 +20,13 @@ namespace Monitor
 
         private static void RunDatabaseMonitors()
         {
+            ConsoleMonitorRunner.Run("sql", TimeSpan.FromMinutes(5),
+                new SqlServerRunningMonitor("server", "servername", "username", "password"),
+                new SqlDatabaseRunningMonitor("db", "servername", "NuGetGallery", "username", "password"),
+                new SqlDatabaseSizeMonitor("size", "servername", "NuGetGallery", "username", "password"),
+                new SqlIndexFragmentationMonitor("indexfrag", "servername", "NuGetGallery", "username", "password"),
+                new SqlQueryPlanMonitor("query", "servername", "NuGetGallery", "username", "password")
+                new SqlPrincipalAgeMonitor("principals", "servername", "username", "password"));
         }
 
         private static void RunHttpMonitor()
