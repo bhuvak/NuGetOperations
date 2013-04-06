@@ -20,7 +20,7 @@ namespace Monitor
 
         private static void RunDatabaseMonitors()
         {
-            
+
         }
 
         private static void RunHttpMonitor()

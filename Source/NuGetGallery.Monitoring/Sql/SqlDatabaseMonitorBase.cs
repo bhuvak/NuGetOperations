@@ -35,7 +35,7 @@ namespace NuGetGallery.Monitoring.Sql
 
         protected override string FormatResourceName()
         {
-            return "Server=" + Server + ";Database=" + Database;
+            return Database;
         }
     }
 }
