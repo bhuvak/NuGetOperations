@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using NuGetGallery.Monitoring;
 using NuGetGallery.Monitoring.Http;
+using NuGetGallery.Monitoring.NuGet;
 using NuGetGallery.Monitoring.Sql;
 
 namespace Monitor
@@ -15,7 +16,14 @@ namespace Monitor
         static void Main(string[] args)
         {
             //RunHttpMonitor();
-            RunDatabaseMonitors();
+            //RunDatabaseMonitors();
+            RunStatisticsMonitors();
+        }
+
+        private static void RunStatisticsMonitors()
+        {
+            ConsoleMonitorRunner.Run("stats", TimeSpan.FromHours(1),
+                new DownloadStatsMonitor("totals", new Uri("http://www.nuget.org")));
         }
 
         private static void RunDatabaseMonitors()
@@ -25,7 +33,7 @@ namespace Monitor
                 new SqlDatabaseRunningMonitor("db", "servername", "NuGetGallery", "username", "password"),
                 new SqlDatabaseSizeMonitor("size", "servername", "NuGetGallery", "username", "password"),
                 new SqlIndexFragmentationMonitor("indexfrag", "servername", "NuGetGallery", "username", "password"),
-                new SqlQueryPlanMonitor("query", "servername", "NuGetGallery", "username", "password")
+                new SqlQueryPlanMonitor("query", "servername", "NuGetGallery", "username", "password"),
                 new SqlPrincipalAgeMonitor("principals", "servername", "username", "password"));
         }
 

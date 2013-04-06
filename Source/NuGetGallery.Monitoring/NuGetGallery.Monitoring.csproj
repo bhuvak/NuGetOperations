@@ -46,11 +46,17 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\Microsoft.Bcl.Async.1.0.14-rc\lib\net40\Microsoft.Threading.Tasks.Extensions.Desktop.dll</HintPath>
     </Reference>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\..\packages\Newtonsoft.Json.4.5.11\lib\net40\Newtonsoft.Json.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Net" />
     <Reference Include="System.Net.Http">
       <HintPath>..\..\packages\Microsoft.Net.Http.2.0.20710.0\lib\net40\System.Net.Http.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Net.Http.Formatting">
+      <HintPath>..\..\packages\Microsoft.AspNet.WebApi.Client.4.1.0-alpha-120809\lib\net40\System.Net.Http.Formatting.dll</HintPath>
     </Reference>
     <Reference Include="System.Net.Http.WebRequest">
       <HintPath>..\..\packages\Microsoft.Net.Http.2.0.20710.0\lib\net40\System.Net.Http.WebRequest.dll</HintPath>
@@ -79,6 +85,8 @@
     <Compile Include="MonitorSet.cs" />
     <Compile Include="EventType.cs" />
     <Compile Include="IEventReporter.cs" />
+    <Compile Include="NuGet\DownloadStatsMonitor.cs" />
+    <Compile Include="NuGet\NuGetStatsTotals.cs" />
     <Compile Include="Sql\SqlPrincipalAgeMonitor.cs" />
     <Compile Include="Sql\SqlQueryPlanMonitor.cs" />
     <Compile Include="Sql\SqlIndexFragmentationMonitor.cs" />
