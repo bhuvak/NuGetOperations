@@ -12,29 +12,27 @@ namespace NuGetGallery.Monitoring.Http
         public string Method { get; private set; }
         public HttpStatusCode? ExpectedStatusCode { get; private set; }
         public TimeSpan ExpectedTimeout { get; private set; }
-        public TimeSpan MaximumTimeout { get; private set; }
-
+        
         public HttpPingTarget(Uri url) : this(url, "GET") { }
-        public HttpPingTarget(Uri url, string method) : this(url, method, TimeSpan.FromMilliseconds(500), TimeSpan.FromSeconds(5))
+        public HttpPingTarget(Uri url, string method) : this(url, method, TimeSpan.FromMilliseconds(500))
         {
         }
 
         public HttpPingTarget(Uri url, string method, HttpStatusCode expectedStatusCode)
-            : this(url, method, expectedStatusCode, TimeSpan.FromMilliseconds(500), TimeSpan.FromSeconds(5))
+            : this(url, method, expectedStatusCode, TimeSpan.FromMilliseconds(500))
         {
         }
 
-        public HttpPingTarget(Uri url, string method, TimeSpan expectedTimeout, TimeSpan maximumTimeout)
+        public HttpPingTarget(Uri url, string method, TimeSpan expectedTimeout)
         {
             Url = url;
             Method = method;
             ExpectedTimeout = expectedTimeout;
-            MaximumTimeout = maximumTimeout;
             ExpectedStatusCode = null;
         }
 
-        public HttpPingTarget(Uri url, string method, HttpStatusCode expectedStatusCode, TimeSpan expectedTimeout, TimeSpan maximumTimeout)
-            : this(url, method, expectedTimeout, maximumTimeout)
+        public HttpPingTarget(Uri url, string method, HttpStatusCode expectedStatusCode, TimeSpan expectedTimeout)
+            : this(url, method, expectedTimeout)
         {
             ExpectedStatusCode = expectedStatusCode;
         }

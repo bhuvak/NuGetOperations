@@ -10,21 +10,29 @@ using System.Net.NetworkInformation;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace NuGetGallery.Monitoring.Http
 {
     public class HttpMonitor : ApplicationMonitor
     {
+        public static readonly TimeSpan DefaultHardTimeout = TimeSpan.FromMinutes(1);
+
         /// <summary>
-        /// The Url to ping
+        /// Gets the URL to the target to ping.
         /// </summary>
         public HttpPingTarget Target { get; private set; }
 
         /// <summary>
-        /// Gets or sets the URL to a known-good site that can be used to test network connectivity issues
+        /// Gets the URL to a known-good site that can be used to test network connectivity issues
         /// </summary>
         public HttpPingTarget KnownGoodSite { get; private set; }
+
+        /// <summary>
+        /// Gets or sets the timeout to abort the entire request after. Default is 1 minute (<see cref="DefaultHardTimeout"/>).
+        /// </summary>
+        public TimeSpan HardTimeout { get; set; }
 
         protected override string DefaultResourceName
         {
@@ -43,6 +51,7 @@ namespace NuGetGallery.Monitoring.Http
         {
             Target = target;
             KnownGoodSite = knownGoodSite;
+            HardTimeout = DefaultHardTimeout;
         }
 
         protected override async Task Invoke()
@@ -112,11 +121,10 @@ namespace NuGetGallery.Monitoring.Http
                 });
                 var request = new HttpRequestMessage(new HttpMethod(target.Method), target.Url);
                 
-                var timeoutDelta = target.MaximumTimeout - target.ExpectedTimeout;
-                
                 // Wait for the request OR the expected timeout
+                CancellationTokenSource tokenSource = new CancellationTokenSource();
                 Trace.Verbose("-> HTTP {0} {1}", target.Method, target.Url.AbsoluteUri);
-                var requestTask = client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+                var requestTask = client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, tokenSource.Token);
                 if (requestTask.Wait(target.ExpectedTimeout))
                 {
                     return TaskEx.FromResult(CheckRequest(target, requestTask));
@@ -128,12 +136,24 @@ namespace NuGetGallery.Monitoring.Http
                     reportUnhealthy(target);
                 }
                 
-                if (requestTask.Wait(timeoutDelta))
+                // Still want a timeout.
+                try
                 {
-                    return TaskEx.FromResult(CheckRequest(target, requestTask));
+                    if (requestTask.Wait(HardTimeout))
+                    {
+                        return TaskEx.FromResult(CheckRequest(target, requestTask));
+                    }
                 }
-                Trace.Error("Hard timeout fired: {0}ms", target.MaximumTimeout.TotalMilliseconds);
-                return TaskEx.FromResult(Tuple.Create("Maximum Timeout Exceeded", EventType.Failure));
+                catch (Exception ex)
+                {
+                    return TaskEx.FromResult(Tuple.Create(
+                        String.Format("Request failed due to exception: {0}", ex.GetBaseException()),
+                        EventType.Failure));
+                }
+                tokenSource.Cancel();
+                string message = String.Format("Hard timeout fired: {0}", HardTimeout.ToString());
+                Trace.Error(message);
+                return TaskEx.FromResult(Tuple.Create(message, EventType.Failure));
             });
 
             if (!requestResult.IsSuccess)
@@ -148,6 +168,7 @@ namespace NuGetGallery.Monitoring.Http
 
         private Tuple<string, EventType> CheckRequest(HttpPingTarget target, Task<HttpResponseMessage> requestTask)
         {
+            // We should be completed at this point...
             Debug.Assert(requestTask.IsCompleted);
             var response = requestTask.Result;
             Trace.Verbose("<- HTTP {0} {1}", (int)response.StatusCode, response.ReasonPhrase);

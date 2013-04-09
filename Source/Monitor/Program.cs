@@ -15,9 +15,9 @@ namespace Monitor
     {
         static void Main(string[] args)
         {
-            //RunHttpMonitor();
+            RunHttpMonitor();
             //RunDatabaseMonitors();
-            RunStatisticsMonitors();
+            //RunStatisticsMonitors();
         }
 
         private static void RunStatisticsMonitors()

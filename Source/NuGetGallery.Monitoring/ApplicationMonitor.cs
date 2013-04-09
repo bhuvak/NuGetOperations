@@ -121,7 +121,7 @@ namespace NuGetGallery.Monitoring
                 {
                     sw.Stop();
                 }
-                return new TimeResult<T>(sw.Elapsed, ex, result);
+                return new TimeResult<T>(sw.Elapsed, ex.GetBaseException(), result);
             }
             if (sw.IsRunning)
             {
